@@ -37,6 +37,8 @@ Use these build parameters:
 ```text
 DOCKER_IMAGE=<dockerhub-username>/teedy-app
 DOCKER_CREDENTIALS_ID=dockerhub_credentials
+RUN_DOCKER_STAGES=true
+PUSH_DOCKER_IMAGE=true
 ```
 
 The Docker stages do the following:

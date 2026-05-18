@@ -1,9 +1,22 @@
+def runMaven(String args) {
+    if (isUnix()) {
+        sh "mvn ${args}"
+    } else {
+        bat """
+for /f "delims=" %%i in ('wsl -d Ubuntu-22.04 -- wslpath -a "%WORKSPACE%"') do set "WSL_WORKSPACE=%%i"
+wsl -d Ubuntu-22.04 -- bash -lc "cd \\"\$WSL_WORKSPACE\\" && mvn ${args}"
+"""
+    }
+}
+
 pipeline {
     agent any
 
     parameters {
-        string(name: 'DOCKER_IMAGE', defaultValue: 'your-dockerhub-username/teedy-app', description: 'Docker Hub repository, for example username/teedy-app')
+        string(name: 'DOCKER_IMAGE', defaultValue: 'teedy-practice10', description: 'Docker image name. Use username/teedy-app when pushing to Docker Hub.')
         string(name: 'DOCKER_CREDENTIALS_ID', defaultValue: 'dockerhub_credentials', description: 'Jenkins Docker Hub credentials ID')
+        booleanParam(name: 'RUN_DOCKER_STAGES', defaultValue: false, description: 'Run Practice 10 Docker build/run stages. Requires Docker Desktop/daemon to work.')
+        booleanParam(name: 'PUSH_DOCKER_IMAGE', defaultValue: false, description: 'Push the image to Docker Hub. Requires DOCKER_IMAGE=username/repository and valid credentials.')
     }
 
     environment {
@@ -14,11 +27,7 @@ pipeline {
         stage('Clean') {
             steps {
                 script {
-                    if (isUnix()) {
-                        sh 'mvn clean'
-                    } else {
-                        bat 'mvn clean'
-                    }
+                    runMaven('clean')
                 }
             }
         }
@@ -26,11 +35,7 @@ pipeline {
         stage('Compile') {
             steps {
                 script {
-                    if (isUnix()) {
-                        sh 'mvn compile'
-                    } else {
-                        bat 'mvn compile'
-                    }
+                    runMaven('compile')
                 }
             }
         }
@@ -38,11 +43,7 @@ pipeline {
         stage('Test') {
             steps {
                 script {
-                    if (isUnix()) {
-                        sh 'mvn test -Dmaven.test.failure.ignore=true'
-                    } else {
-                        bat 'mvn test -Dmaven.test.failure.ignore=true'
-                    }
+                    runMaven('test -Dmaven.test.failure.ignore=true')
                 }
             }
         }
@@ -50,11 +51,7 @@ pipeline {
         stage('PMD') {
             steps {
                 script {
-                    if (isUnix()) {
-                        sh 'mvn pmd:pmd'
-                    } else {
-                        bat 'mvn pmd:pmd'
-                    }
+                    runMaven('pmd:pmd')
                 }
             }
         }
@@ -62,11 +59,7 @@ pipeline {
         stage('JaCoCo') {
             steps {
                 script {
-                    if (isUnix()) {
-                        sh 'mvn jacoco:report'
-                    } else {
-                        bat 'mvn jacoco:report'
-                    }
+                    runMaven('jacoco:report')
                 }
             }
         }
@@ -74,11 +67,7 @@ pipeline {
         stage('Javadoc') {
             steps {
                 script {
-                    if (isUnix()) {
-                        sh 'mvn javadoc:javadoc'
-                    } else {
-                        bat 'mvn javadoc:javadoc'
-                    }
+                    runMaven('javadoc:javadoc')
                 }
             }
         }
@@ -86,11 +75,7 @@ pipeline {
         stage('Site') {
             steps {
                 script {
-                    if (isUnix()) {
-                        sh 'mvn site -Dmaven.test.failure.ignore=true'
-                    } else {
-                        bat 'mvn site -Dmaven.test.failure.ignore=true'
-                    }
+                    runMaven('site -Dmaven.test.failure.ignore=true')
                 }
             }
         }
@@ -98,16 +83,15 @@ pipeline {
         stage('Package') {
             steps {
                 script {
-                    if (isUnix()) {
-                        sh 'mvn -B -Pprod package -DskipTests'
-                    } else {
-                        bat 'mvn -B -Pprod package -DskipTests'
-                    }
+                    runMaven('-B -Pprod package -DskipTests')
                 }
             }
         }
 
         stage('Build Docker Image') {
+            when {
+                expression { return params.RUN_DOCKER_STAGES }
+            }
             steps {
                 script {
                     if (isUnix()) {
@@ -120,6 +104,9 @@ pipeline {
         }
 
         stage('Push Docker Image') {
+            when {
+                expression { return params.RUN_DOCKER_STAGES && params.PUSH_DOCKER_IMAGE }
+            }
             steps {
                 withCredentials([usernamePassword(credentialsId: params.DOCKER_CREDENTIALS_ID, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     script {
@@ -138,6 +125,9 @@ pipeline {
         }
 
         stage('Run Three Containers') {
+            when {
+                expression { return params.RUN_DOCKER_STAGES }
+            }
             steps {
                 script {
                     [8082, 8083, 8084].each { port ->
