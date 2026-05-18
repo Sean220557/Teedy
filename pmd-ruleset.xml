@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="Teedy Practice 7 Metrics Rules"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+    <description>
+        Custom PMD ruleset for Practice 7 metrics: LoC, CC, WMC, CBO, and LCOM-related checks.
+    </description>
+
+    <!-- LoC metric proxy -->
+    <rule ref="category/java/design.xml/NcssCount" />
+
+    <!-- CC metric -->
+    <rule ref="category/java/design.xml/CyclomaticComplexity" />
+
+    <!-- WMC-related proxy -->
+    <rule ref="category/java/design.xml/TooManyMethods" />
+
+    <!-- CBO metric -->
+    <rule ref="category/java/design.xml/CouplingBetweenObjects" />
+
+    <!-- LCOM-related proxy (uses cohesion indicators as part of God Class detection) -->
+    <rule ref="category/java/design.xml/GodClass" />
+</ruleset>

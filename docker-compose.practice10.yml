@@ -1,0 +1,48 @@
+services:
+  teedy-8082:
+    image: teedy-practice10:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: teedy-container-8082
+    restart: unless-stopped
+    ports:
+      - "8082:8080"
+    environment:
+      DOCS_BASE_URL: "http://localhost:8082"
+      DOCS_ADMIN_EMAIL_INIT: "admin@example.com"
+      DOCS_ADMIN_PASSWORD_INIT: "$$2a$$05$$PcMNUbJvsk7QHFSfEIDaIOjk1VI9/E7IPjTKx.jkjPxkx2EOKSoPS"
+    volumes:
+      - ./target/docker-data/8082:/data
+
+  teedy-8083:
+    image: teedy-practice10:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: teedy-container-8083
+    restart: unless-stopped
+    ports:
+      - "8083:8080"
+    environment:
+      DOCS_BASE_URL: "http://localhost:8083"
+      DOCS_ADMIN_EMAIL_INIT: "admin@example.com"
+      DOCS_ADMIN_PASSWORD_INIT: "$$2a$$05$$PcMNUbJvsk7QHFSfEIDaIOjk1VI9/E7IPjTKx.jkjPxkx2EOKSoPS"
+    volumes:
+      - ./target/docker-data/8083:/data
+
+  teedy-8084:
+    image: teedy-practice10:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: teedy-container-8084
+    restart: unless-stopped
+    ports:
+      - "8084:8080"
+    environment:
+      DOCS_BASE_URL: "http://localhost:8084"
+      DOCS_ADMIN_EMAIL_INIT: "admin@example.com"
+      DOCS_ADMIN_PASSWORD_INIT: "$$2a$$05$$PcMNUbJvsk7QHFSfEIDaIOjk1VI9/E7IPjTKx.jkjPxkx2EOKSoPS"
+    volumes:
+      - ./target/docker-data/8084:/data

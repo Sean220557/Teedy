@@ -1,0 +1,196 @@
+[CS304] Tutorial 9 - CI/CD tools
+What is CI/CD?
+CI (Continuous Integration) – automatically build and test every code change pushed to a shared
+repository.
+CD (Continuous Delivery / Deployment) – extend CI so the tested application is always ready to be
+released (or even deployed automatically).
+In this tutorial you will:
+Set up a Jenkins Pipeline for a Maven project (Teedy)
+Create a GitHub Actions workflow to build and publish artifacts
+(Optional) Trigger Jenkins from GitHub Actions
+Part I: Jenkins Pipeline
+Install and run Jenkins
+1. Download Jenkins Generic Java package (.war) from jenkins.io/download and save it to wherever
+you want.
+2. Open a terminal, navigate to the directory containing the  .war  file, and start Jenkins:
+java -jar jenkins.war --httpPort=8080
+If your Maven is installed in WSL, run this command inside the WSL terminal.
+3. The terminal output will show an initial admin password. Copy this password – you’ll need it to
+unlock Jenkins.
+4. Open you browser and go to http://localhost:8080.
+5. On the unlock page, the username is  admin . Paste the initial password you copied.
+If you missed the password, you can still find it at
+/home/<your-username>/.jenkins/secrets/initialAdminPassword .
+6. Follow the setup wizard. Choose Install suggested plugins if you are new to Jenkins.
+7. Install the Maven Integration plugin:
+Click System Management:
+Choose Plugins Management:
+Go to Available Plugins tab, search for “Maven Integration”, select it, and click Install.
+8. Restart Jenkins after installation.
+Create a Jenkins Pipeline project
+Now Let's use Jenkins to manage your Teedy project.
+1. From the Jenkins dashboard, click New Item.
+2. Enter a name for your project, select Pipeline.
+3. In the project configuration, scroll to the Pipeline section.
+Under Definition, choose Pipeline script from SCM.
+Under SCM, select Git.
+Enter your repository URL (the same Teedy repo you’re working on).
+If your repository is private, you'll need to provide a GitHub personal access token. Refer to
+How to use GitHub Personal Access Token in Jenkins.
+4. Click Save to store the configuration.
+Add a Jenkinsfile
+Inside your Teedy repository, create a file named  Jenkinsfile  (no extension) at the root. This
+declarative pipeline defines the entire build process.
+pipeline {
+    agent any
+    stages {
+        stage('Clean') {
+            steps {
+                sh 'mvn clean'
+            }
+        }
+        stage('Compile') {
+            steps {
+                sh 'mvn compile'
+            }
+        }
+        stage('Test') {
+            steps {
+                sh 'mvn test -Dmaven.test.failure.ignore=true'
+            }
+        }
+        stage('PMD') {
+            steps {
+                sh 'mvn pmd:pmd'
+            }
+        }
+        stage('JaCoCo') {
+            steps {
+                sh 'mvn jacoco:report'
+            }
+        }
+        stage('Javadoc') {
+            steps {
+                sh 'mvn javadoc:javadoc'
+            }
+        }
+        stage('Site') {
+            steps {
+                sh 'mvn site'
+            }
+        }
+        stage('Package') {
+            steps {
+                sh 'mvn package -DskipTests'
+            }
+        }
+    }
+    post {
+        always {
+            archiveArtifacts artifacts: '**/target/site/**/*.*', fingerprint: true
+            archiveArtifacts artifacts: '**/target/**/*.jar', fingerprint: true
+            archiveArtifacts artifacts: '**/target/**/*.war', fingerprint: true
+            junit '**/target/surefire-reports/*.xml'
+        }
+    }
+}
+Explanation of the pipeline:
+Stages: Clean → Compile → Test → PMD → JaCoCo → Javadoc → Site → Package.
+Stage Javadoc:this step invokes the Maven Javadoc Plugin to automatically generate API
+documentation from Javadoc comments in your Java source code. The output is a set of
+HTML pages that describe classes, methods, constructors, and fields.-- Why include Javadoc generation in CI?
+Ensures documentation is always up-to-date with the latest source code.
+Exposes documentation as a build artifact (site report) that can be reviewed or referenced
+later.-- How to make  mvn javadoc:javadoc  work?
+declare the  maven-javadoc-plugin  in Teedy's  pom.xml  ( <build>  and  <reporting> ) like
+ jacoco .
+ post { always { ... } } : Archives test results, site documentation, JAR and WAR files after
+every build.
+Commit and push the  Jenkinsfile  to your repository:
+Run the Pipeline
+1. Go to your pipeline project in Jenkins and click Build Now.
+2. Jenkins will pull the latest commit from your Git repository and execute the stages defined in the
+Jenkinsfile sequentially.
+3. Click on the build number (for example,  #5 ) view live progress.
+4. After the build finishes, you can inspect:
+Console Output – full build log.
+Workspace – files checked out by Jenkins.
+Pipeline Overview - A visual representation of all stages defined in the Jenkinsfile. Each
+stage is color-coded (green for success, red for failure) and shows its execution duration. It
+gives an at-a-glance summary of the build flow, and clicking any stage takes you directly to its
+detailed console log.
+Build Artifacts – archived JARs, WARs, and site documentation (HTML) available for
+download.
+Note: If archived HTML pages (like the Maven site) do not render correctly (missing
+CSS/JS), this is due to Jenkins' security restrictions. See this workaround.
+Part II: Github Actions
+Create a workflow
+1. In your GitHub repository, go to the Actions tab.
+2. You can either:
+choose a starter workflow (e.g., Publish Java Package with Gradle), or
+click set up a workflow yourself to create a custom one.
+3. Define the workflow file (e.g.,  .github/workflows/build.yml ) and paste the configuration below.
+Teedy's Simplified CI Workflow
+Teedy’s original workflow is at build-deploy.yml. For this tutorial we use only the build and publish
+part (Docker is covered later).
+name: Maven CI/CD
+on:
+  push:
+    branches: [master]
+    tags: [v*]
+  workflow_dispatch:
+jobs:
+  build_and_publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: "11"
+          distribution: "temurin"
+          cache: maven
+      - name: Install test dependencies
+        run: sudo apt-get update && sudo apt-get -y -q --no-install-recommends install ffmpeg me
+      - name: Build with Maven
+        run: mvn --batch-mode -Pprod clean install
+      - name: Upload war artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-web-ci.war
+          path: docs-web/target/docs*.war
+Key steps explained:
+Trigger: on push to  master  or new version tag, and manual dispatch.
+Environment: uses  ubuntu-latest  with JDK 11 (Temurin distribution).
+Build: runs Maven with the  prod  profile (production mode).
+Artifact: uploads the generated WAR file so you can download it from the Actions run page.
+Commit and View Results
+1. Paste above contents to the  .yml  file, and click Commit changes...
+2. Go to the Actions tab, you will see the workflow running.
+3. After a successful run, you can download the  docs-web-ci.war  artifact from the workflow
+summary.
+Part III: Jenkins with Github Action
+You can trigger a Jenkins pipeline directly from a GitHub Actions workflow. For a complete example,
+see the official tutorial:
+Build a Jenkins pipeline using Jenkinsfile Runner GitHub Actions
+This topic is optional but useful when you want to orchestrate Jenkins jobs from your GitHub
+repository.
+Practice11-Jenkins.md
+2026-05-04
+Practice 9
+Deadline: Check onsite on or before week 13 lab.
+Add Jenkinsfile to your Teedy project based on the tutorial. Execute the pipeline, and show us the
+following results.
+1. CI pipeline execution:
+ When checking the CI pipeline
+execution results, the main focus is the Jenkins pipeline itself – it doesn't matter whether the Javadoc stage is
+present or not.
+2. Test results
+3. Artifacts
+Demo the binary artifacts generated by the pipeline.
+1 / 2
+Practice11-Jenkins.md
+2026-05-04
+4. Site documentation
+By clicking the index.html, you should see our familiar site documentation.
+2 / 2

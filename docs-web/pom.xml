@@ -245,9 +245,9 @@
                     </exec>
                     <!-- grunt -->
                     <exec executable="cmd" dir="${project.basedir}/src/main/webapp" osfamily="windows" failonerror="true">
-                      <arg line="/c grunt --apiurl=api" />
+                      <arg line="/c node_modules\.bin\grunt.cmd --apiurl=api" />
                     </exec>
-                    <exec executable="grunt" dir="${project.basedir}/src/main/webapp" osfamily="unix" failonerror="true">
+                    <exec executable="./node_modules/.bin/grunt" dir="${project.basedir}/src/main/webapp" osfamily="unix" failonerror="true">
                       <arg line="--apiurl=api" />
                     </exec>
                   </target>

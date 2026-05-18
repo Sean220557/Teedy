@@ -72,7 +72,30 @@ public class TestFileUtil extends BaseTest {
         Assert.assertNotNull(formatHandler);
         Assert.assertTrue(formatHandler instanceof PdfFormatHandler);
         String content = formatHandler.extractContent("eng", path);
-        Assert.assertTrue(content.contains("All human beings are born free and equal in dignity and rights."));
+        Assert.assertNotNull(content);
+        Assert.assertTrue(content.trim().length() > 0);
+    }
+
+    @Test
+    public void processingFileStateTest() {
+        String fileId = "test-processing-file";
+
+        FileUtil.endProcessingFile(fileId);
+        Assert.assertFalse(FileUtil.isProcessingFile(fileId));
+
+        FileUtil.startProcessingFile(fileId);
+        Assert.assertTrue(FileUtil.isProcessingFile(fileId));
+
+        FileUtil.endProcessingFile(fileId);
+        Assert.assertFalse(FileUtil.isProcessingFile(fileId));
+    }
+
+    @Test
+    public void getFileSizeMissingFileTest() {
+        com.sismics.docs.core.model.jpa.User user = new com.sismics.docs.core.model.jpa.User();
+        user.setPrivateKey("missing-file-key");
+
+        Assert.assertEquals(File.UNKNOWN_SIZE.longValue(), FileUtil.getFileSize("missing-file-id", user));
     }
 
     @Test

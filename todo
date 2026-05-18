@@ -1,0 +1,197 @@
+Tutorial8-Testing.md
+2025-04-02
+[CS304] Tutorial 8: Testing with JUnit and JaCoCo
+In this tutorial, we'll learn about the basics of JUnit testing. We'll also use Teedy to demonstrate common
+testing practices using maven, JUnit, and test coverage tools.
+Getting Started with JUnit
+JUnit is essentially a dependency to your project, which could be downloaded and managed using Maven. You
+may refer to this official guide of IntelliJ IDEA to create a Maven project and add JUnit dependency in
+pom.xml.
+<dependencies> 
+<dependency> 
+<groupId>org.junit.jupiter</groupId> 
+<artifactId>junit-jupiter</artifactId> 
+<version>5.7.1</version> 
+</dependency>
+</dependencies>
+Follow this official guide to create application code, generate tests, and execute the tests to observe the
+results.
+Examining Tests in Teedy
+Teedy has 3 modules docs-core, docs-web-common, and docs-web, each can be built and tested
+independently. You may observe the JUnit dependency in pom.xml of any module, and observe the test cases
+written for any of the modules.
+1 / 6
+Tutorial8-Testing.md
+2025-04-02
+Running Teedy Tests
+The Surefire Plugin is used during the test phase of the build lifecycle to execute the unit tests of an
+application. In previous labs, we skipped tests when building Teedy using mvn clean -DskipTests install.
+You could simply remove the -DskipTests option if you want to run tests in building.
+Alternatively, you could run mvn test directly to execute all unit tests in the project. By default, it
+automatically executes all test classes with the following wildcard patterns:
+**/Test*.java
+**/*Test.java
+**/*Tests.java
+**/*TestCase.java
+If the test classes do not follow the default wildcard patterns, then override them by configuring the Surefire
+Plugin and specify the tests you want to include (or exclude) or another patterns.
+<project> 
+  [...] 
+<build> 
+<plugins> 
+<plugin> 
+<groupId>org.apache.maven.plugins</groupId> 
+<artifactId>maven-surefire-plugin</artifactId> 
+<version>3.0.0</version> 
+<configuration> 
+<includes> 
+<include>Sample.java</include> 
+</includes> 
+<excludes> 
+<exclude>**/TestCircle.java</exclude> 
+<exclude>**/TestSquare.java</exclude> 
+</excludes> 
+</configuration> 
+</plugin> 
+</plugins> 
+</build> 
+  [...] 
+</project>
+Use mvn test --fail-never so that the testing continues even if certain test cases fail.
+Running all tests may take a long time. Sometimes you may want to run only a few interesting test classes or
+test methods. In that case, you could run:
+mvn -Dtest=TestCss test
+mvn -Dtest=TestCss,TestImageUtil test
+2 / 6
+mvn -Dtest=TestEncryptUtil#encryptStreamTest+decryptStreamTest test
+Tutorial8-Testing.md
+2025-04-02
+You may also use -pl to specify a module to run tests:
+mvn test -pl docs-core
+See here for detailed syntax on running single test.
+Checking Test Report
+If you want to get easy access to test report, run mvn surefire-report:report which generates report in
+html format in target/site/surefire-report.html for each module. Note that you have to execute tests
+first before you could generate report.
+You could open the report in a browser for examination.
+Test Coverage
+Code coverage is a software metric used to measure how many parts of our code are executed during
+automated tests. In this tutorial, we'll use JaCoCo, a free code coverage reports generator for Java projects, to
+check the test coverage of Teedy.
+First, add the following into the pom.xml of Teedy (you might want to manually reload the project to reflect
+the change):
+<plugin> 
+<groupId>org.jacoco</groupId> 
+<artifactId>jacoco-maven-plugin</artifactId> 
+<version>0.8.9</version> 
+<executions> 
+<execution> 
+<goals> 
+<goal>prepare-agent</goal> 
+</goals> 
+</execution> 
+3 / 6
+Tutorial8-Testing.md
+<!-- attached to Maven test phase --> 
+<execution> 
+<id>report</id> 
+<phase>test</phase> 
+<goals> 
+<goal>report</goal> 
+</goals> 
+</execution> 
+</executions> 
+</plugin>
+2025-04-02
+Then, run mvn test jacoco:report -Dmaven.test.failure.ignore=true. Again, you need to run tests
+first in order to generate reports. -Dmaven.test.failure.ignore=true will ignore any failures occurred
+during test execution.
+This will generate a coverage report at target/site/jacoco/index.html within each module. Open the
+report in a browser to navigate and observe the results.
+JaCoCo mainly provides three important metrics:
+Lines coverage reflects the amount of code that has been exercised based on the number of Java byte
+code instructions called by the tests.
+Branches coverage shows the percent of exercised branches in the code, typically related to if/else and
+switch statements.
+Cyclomatic complexity reflects the complexity of code by giving the number of paths needed to cover
+all the possible paths in a code through linear combination. This includes not only the conditional
+branches but also other control structures like loops and try-catch blocks.
+4 / 6
+Click any element to observe detailed code coverage.
+Tutorial8-Testing.md
+2025-04-02
+JaCoCo reports help us visually analyze code coverage by using diamonds with colors for branches, and
+background colors for lines:
+Red diamond means that no branches have been exercised during the test phase.
+Yellow diamond shows that the code is partially covered – some branches have not been exercised.
+Green diamond means that all branches have been exercised during the test.
+The same color code applies to the background color, but for lines coverage.
+Integrate Test Reports in Site Documentation
+Finally, we may want to add test reports in our site documentation. Add the following in pom.xml:
+<reporting> 
+<plugins> 
+<plugin> 
+<groupId>org.apache.maven.plugins</groupId> 
+<artifactId>maven-surefire-report-plugin</artifactId> 
+<version>3.0.0</version> 
+<reportSets> 
+<reportSet> 
+<id>aggregate</id> 
+<inherited>false</inherited> 
+<reports> 
+<report>report</report> 
+</reports> 
+<configuration> 
+<aggregate>true</aggregate> 
+</configuration> 
+</reportSet> 
+</reportSets> 
+</plugin> 
+<plugin> 
+<groupId>org.jacoco</groupId> 
+5 / 6
+Tutorial8-Testing.md
+<artifactId>jacoco-maven-plugin</artifactId> 
+<version>0.8.9</version> 
+<reportSets> 
+<reportSet> 
+<id>aggregate</id> 
+<inherited>false</inherited> 
+<reports> 
+<report>report-aggregate</report> 
+</reports> 
+</reportSet> 
+</reportSets> 
+</plugin> 
+</plugins>
+</reporting>
+2025-04-02
+Then run: mvn clean test site -Dmaven.test.failure.ignore=true. Open target/site/index.html
+in your browser. Now, you could navigate the site doc to explore the surefire and JaCoCo reports easily.
+References
+Maven Surefire documentation
+JaCoCo tutorial
+6 / 6
+Practice8-Coverage.md
+2026-04-26
+Practice 8
+Deadline: Check onsite on or before week 12 lab.
+In this practice, we'll modify Teedy's tests in order to improve its test coverage.
+Preparation
+First, you should follow the tutorial so that:
+Task
+You could execute the original tests included in Teedy
+You could use JaCoCo on Teedy to generate test coverage report.
+The JaCoCo report shows that the current test suite for Teedy has low instruction coverage and branch
+coverage.
+You should add one or more test cases in order to improve both these two coverages.
+A crucial part of this task is to understand Teedy's source code and test code. You could pick any element (e.g.,
+class, method) within any module in Teedy as the target to be tested by your test cases.
+Evaluation
+To demonstrate that you've completed the task, you should show us:
+The original JaCoCo test coverage report.
+The test cases that you've added
+Execute the new test cases (mvn -Dtest=YourNewTestClass test)
+Run jacoco:report again and show us the new JaCoCo test coverage report, which should have
+increased instruction coverage and branch coverage compared to the original report.
+1 / 1
