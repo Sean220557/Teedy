@@ -2,7 +2,7 @@ def runMaven(String args) {
     if (isUnix()) {
         sh "mvn ${args}"
     } else {
-        bat "\"${env.MAVEN_CMD}\" ${args}"
+        bat "set \"PATH=${env.NODEJS_HOME};%PATH%\" && \"${env.MAVEN_CMD}\" ${args}"
     }
 }
 
@@ -20,6 +20,7 @@ pipeline {
         DOCKER_TAG = "${env.BUILD_NUMBER}"
         MAVEN_CMD = 'E:\\apache-maven-3.9.14\\bin\\mvn.cmd'
         DOCKER_CMD = 'C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe'
+        NODEJS_HOME = 'C:\\Program Files\\nodejs'
     }
 
     stages {
@@ -82,6 +83,9 @@ pipeline {
         stage('Package') {
             steps {
                 script {
+                    if (!isUnix()) {
+                        bat 'set "PATH=C:\\Program Files\\nodejs;%PATH%" && node --version && npm --version'
+                    }
                     runMaven('-B -Pprod package -DskipTests')
                 }
             }
