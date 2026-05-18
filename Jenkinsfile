@@ -107,27 +107,6 @@ pipeline {
             }
         }
 
-        stage('Push Docker Image') {
-            when {
-                expression { return params.RUN_DOCKER_STAGES && params.PUSH_DOCKER_IMAGE }
-            }
-            steps {
-                withCredentials([usernamePassword(credentialsId: params.DOCKER_CREDENTIALS_ID, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    script {
-                        if (isUnix()) {
-                            sh 'printf "%s" "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
-                            sh "docker push ${params.DOCKER_IMAGE}:${env.DOCKER_TAG}"
-                            sh "docker push ${params.DOCKER_IMAGE}:latest"
-                        } else {
-                            bat "@echo %DOCKER_PASS% | \"${env.DOCKER_CMD}\" login -u \"%DOCKER_USER%\" --password-stdin"
-                            bat "\"${env.DOCKER_CMD}\" push ${params.DOCKER_IMAGE}:${env.DOCKER_TAG}"
-                            bat "\"${env.DOCKER_CMD}\" push ${params.DOCKER_IMAGE}:latest"
-                        }
-                    }
-                }
-            }
-        }
-
         stage('Run Three Containers') {
             when {
                 expression { return params.RUN_DOCKER_STAGES }
@@ -151,6 +130,29 @@ pipeline {
                         sh 'docker ps --filter "name=teedy-container"'
                     } else {
                         bat "\"${env.DOCKER_CMD}\" ps --filter \"name=teedy-container\""
+                    }
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            when {
+                expression { return params.RUN_DOCKER_STAGES && params.PUSH_DOCKER_IMAGE }
+            }
+            steps {
+                catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
+                    withCredentials([usernamePassword(credentialsId: params.DOCKER_CREDENTIALS_ID, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        script {
+                            if (isUnix()) {
+                                sh 'printf "%s" "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
+                                sh "docker push ${params.DOCKER_IMAGE}:${env.DOCKER_TAG}"
+                                sh "docker push ${params.DOCKER_IMAGE}:latest"
+                            } else {
+                                bat "@echo %DOCKER_PASS% | \"${env.DOCKER_CMD}\" login -u \"%DOCKER_USER%\" --password-stdin"
+                                bat "\"${env.DOCKER_CMD}\" push ${params.DOCKER_IMAGE}:${env.DOCKER_TAG}"
+                                bat "\"${env.DOCKER_CMD}\" push ${params.DOCKER_IMAGE}:latest"
+                            }
+                        }
                     }
                 }
             }
