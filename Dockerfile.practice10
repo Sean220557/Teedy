@@ -1,0 +1,7 @@
+FROM scratch
+
+COPY docker/practice10/teedy-practice-server /teedy-practice-server
+
+EXPOSE 8080
+
+ENTRYPOINT ["/teedy-practice-server"]

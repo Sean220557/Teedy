@@ -36,6 +36,7 @@ Use these build parameters:
 
 ```text
 DOCKER_IMAGE=<dockerhub-username>/teedy-app
+DOCKERFILE=Dockerfile.practice10
 DOCKER_CREDENTIALS_ID=dockerhub_credentials
 RUN_DOCKER_STAGES=true
 PUSH_DOCKER_IMAGE=true

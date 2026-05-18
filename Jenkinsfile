@@ -11,6 +11,7 @@ pipeline {
 
     parameters {
         string(name: 'DOCKER_IMAGE', defaultValue: 'teedy-practice10', description: 'Docker image name. Use username/teedy-app when pushing to Docker Hub.')
+        string(name: 'DOCKERFILE', defaultValue: 'Dockerfile.practice10', description: 'Dockerfile used by the Docker stage. Use Dockerfile for the full Teedy image.')
         string(name: 'DOCKER_CREDENTIALS_ID', defaultValue: 'dockerhub_credentials', description: 'Jenkins Docker Hub credentials ID')
         booleanParam(name: 'RUN_DOCKER_STAGES', defaultValue: false, description: 'Run Practice 10 Docker build/run stages. Requires Docker Desktop/daemon to work.')
         booleanParam(name: 'PUSH_DOCKER_IMAGE', defaultValue: false, description: 'Push the image to Docker Hub. Requires DOCKER_IMAGE=username/repository and valid credentials.')
@@ -98,9 +99,9 @@ pipeline {
             steps {
                 script {
                     if (isUnix()) {
-                        sh "docker build -t ${params.DOCKER_IMAGE}:${env.DOCKER_TAG} -t ${params.DOCKER_IMAGE}:latest ."
+                        sh "docker build -f ${params.DOCKERFILE} -t ${params.DOCKER_IMAGE}:${env.DOCKER_TAG} -t ${params.DOCKER_IMAGE}:latest ."
                     } else {
-                        bat "\"${env.DOCKER_CMD}\" build -t ${params.DOCKER_IMAGE}:${env.DOCKER_TAG} -t ${params.DOCKER_IMAGE}:latest ."
+                        bat "\"${env.DOCKER_CMD}\" build -f ${params.DOCKERFILE} -t ${params.DOCKER_IMAGE}:${env.DOCKER_TAG} -t ${params.DOCKER_IMAGE}:latest ."
                     }
                 }
             }
