@@ -2,10 +2,7 @@ def runMaven(String args) {
     if (isUnix()) {
         sh "mvn ${args}"
     } else {
-        bat """
-for /f "delims=" %%i in ('wsl -d Ubuntu-22.04 -- wslpath -a "%WORKSPACE%"') do set "WSL_WORKSPACE=%%i"
-wsl -d Ubuntu-22.04 -- bash -lc "cd \\"\$WSL_WORKSPACE\\" && mvn ${args}"
-"""
+        bat "\"${env.MAVEN_CMD}\" ${args}"
     }
 }
 
@@ -21,6 +18,8 @@ pipeline {
 
     environment {
         DOCKER_TAG = "${env.BUILD_NUMBER}"
+        MAVEN_CMD = 'E:\\apache-maven-3.9.14\\bin\\mvn.cmd'
+        DOCKER_CMD = 'C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe'
     }
 
     stages {
@@ -97,7 +96,7 @@ pipeline {
                     if (isUnix()) {
                         sh "docker build -t ${params.DOCKER_IMAGE}:${env.DOCKER_TAG} -t ${params.DOCKER_IMAGE}:latest ."
                     } else {
-                        bat "docker build -t ${params.DOCKER_IMAGE}:${env.DOCKER_TAG} -t ${params.DOCKER_IMAGE}:latest ."
+                        bat "\"${env.DOCKER_CMD}\" build -t ${params.DOCKER_IMAGE}:${env.DOCKER_TAG} -t ${params.DOCKER_IMAGE}:latest ."
                     }
                 }
             }
@@ -115,9 +114,9 @@ pipeline {
                             sh "docker push ${params.DOCKER_IMAGE}:${env.DOCKER_TAG}"
                             sh "docker push ${params.DOCKER_IMAGE}:latest"
                         } else {
-                            bat '@echo %DOCKER_PASS% | docker login -u "%DOCKER_USER%" --password-stdin'
-                            bat "docker push ${params.DOCKER_IMAGE}:${env.DOCKER_TAG}"
-                            bat "docker push ${params.DOCKER_IMAGE}:latest"
+                            bat "@echo %DOCKER_PASS% | \"${env.DOCKER_CMD}\" login -u \"%DOCKER_USER%\" --password-stdin"
+                            bat "\"${env.DOCKER_CMD}\" push ${params.DOCKER_IMAGE}:${env.DOCKER_TAG}"
+                            bat "\"${env.DOCKER_CMD}\" push ${params.DOCKER_IMAGE}:latest"
                         }
                     }
                 }
@@ -137,16 +136,16 @@ pipeline {
                             sh "docker rm ${containerName} || true"
                             sh "docker run -d --name ${containerName} -p ${port}:8080 ${params.DOCKER_IMAGE}:${env.DOCKER_TAG}"
                         } else {
-                            bat "docker stop ${containerName} || exit /b 0"
-                            bat "docker rm ${containerName} || exit /b 0"
-                            bat "docker run -d --name ${containerName} -p ${port}:8080 ${params.DOCKER_IMAGE}:${env.DOCKER_TAG}"
+                            bat "\"${env.DOCKER_CMD}\" stop ${containerName} || exit /b 0"
+                            bat "\"${env.DOCKER_CMD}\" rm ${containerName} || exit /b 0"
+                            bat "\"${env.DOCKER_CMD}\" run -d --name ${containerName} -p ${port}:8080 ${params.DOCKER_IMAGE}:${env.DOCKER_TAG}"
                         }
                     }
 
                     if (isUnix()) {
                         sh 'docker ps --filter "name=teedy-container"'
                     } else {
-                        bat 'docker ps --filter "name=teedy-container"'
+                        bat "\"${env.DOCKER_CMD}\" ps --filter \"name=teedy-container\""
                     }
                 }
             }
