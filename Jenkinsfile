@@ -34,7 +34,7 @@ pipeline {
         stage('Compile') {
             steps {
                 script {
-                    runMaven('compile')
+                    runMaven('-B install -DskipTests')
                 }
             }
         }
@@ -42,7 +42,7 @@ pipeline {
         stage('Test') {
             steps {
                 script {
-                    runMaven('test -Dmaven.test.failure.ignore=true')
+                    runMaven('-B test -Dmaven.test.failure.ignore=true')
                 }
             }
         }
@@ -50,7 +50,7 @@ pipeline {
         stage('PMD') {
             steps {
                 script {
-                    runMaven('pmd:pmd')
+                    runMaven('-B pmd:pmd -Dmaven.pmd.failure.ignore=true')
                 }
             }
         }
@@ -58,7 +58,7 @@ pipeline {
         stage('JaCoCo') {
             steps {
                 script {
-                    runMaven('jacoco:report')
+                    runMaven('-B jacoco:report')
                 }
             }
         }
@@ -66,7 +66,7 @@ pipeline {
         stage('Javadoc') {
             steps {
                 script {
-                    runMaven('javadoc:javadoc')
+                    runMaven('-B javadoc:javadoc')
                 }
             }
         }
@@ -74,7 +74,7 @@ pipeline {
         stage('Site') {
             steps {
                 script {
-                    runMaven('site -Dmaven.test.failure.ignore=true')
+                    runMaven('-B site -Dmaven.test.failure.ignore=true')
                 }
             }
         }
