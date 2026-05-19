@@ -42,6 +42,15 @@ RUN_DOCKER_STAGES=true
 PUSH_DOCKER_IMAGE=true
 ```
 
+For a local demo without Docker Hub credentials, use:
+
+```text
+DOCKER_IMAGE=teedy-practice10
+DOCKERFILE=Dockerfile.practice10
+RUN_DOCKER_STAGES=true
+PUSH_DOCKER_IMAGE=false
+```
+
 The Docker stages do the following:
 
 ```text
