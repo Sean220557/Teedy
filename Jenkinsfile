@@ -148,7 +148,9 @@ pipeline {
                                 sh "docker push ${params.DOCKER_IMAGE}:${env.DOCKER_TAG}"
                                 sh "docker push ${params.DOCKER_IMAGE}:latest"
                             } else {
-                                bat "@echo %DOCKER_PASS% | \"${env.DOCKER_CMD}\" login -u \"%DOCKER_USER%\" --password-stdin"
+                                powershell """
+\$env:DOCKER_PASS | & '${env.DOCKER_CMD}' login -u \$env:DOCKER_USER --password-stdin
+"""
                                 bat "\"${env.DOCKER_CMD}\" push ${params.DOCKER_IMAGE}:${env.DOCKER_TAG}"
                                 bat "\"${env.DOCKER_CMD}\" push ${params.DOCKER_IMAGE}:latest"
                             }
